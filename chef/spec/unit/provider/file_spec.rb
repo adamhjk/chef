@@ -111,6 +111,7 @@ describe Chef::Provider::File do
     @provider.new_resource.content "foobar"
     File.stub!(:open).and_return(1)
     File.should_receive(:open).with(@provider.new_resource.path, "w").and_yield(io)
+    File.stub!(:exists?).and_return(false)
     lambda { @provider.set_content }.should_not raise_error
     io.string.should == "foobar"
   end
