@@ -31,7 +31,6 @@ require 'chef/provider/mount'
 require 'chef/provider/service'
 require 'chef/provider/package'
 
-
 class Chef
   class Platform
 
@@ -42,7 +41,7 @@ class Chef
         @platforms ||= {
           :mac_os_x => {
             :default => {
-              :package => Chef::Provider::Package::Macports,
+              :package => Chef::Provider::Package::Homebrew,
               :user => Chef::Provider::User::Dscl,
               :group => Chef::Provider::Group::Dscl
             }
