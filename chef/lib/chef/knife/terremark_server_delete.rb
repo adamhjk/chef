@@ -33,9 +33,9 @@ class Chef
         require 'fog'
         require 'highline'
 
-        terremark = Fog::Terremark.new(
-          :terremark_username => Chef::Config[:knife][:terremark_username],
-          :terremark_password => Chef::Config[:knife][:terremark_password],
+        terremark = Fog::Terremark::Vcloud.new(
+          :terremark_vcloud_username => Chef::Config[:knife][:terremark_username],
+          :terremark_vcloud_password => Chef::Config[:knife][:terremark_password],
           :terremark_service  => Chef::Config[:knife][:terremark_service] || :vcloud
         )
 

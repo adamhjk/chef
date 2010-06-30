@@ -107,6 +107,7 @@ EOH
         ssh.name_args = [ server_name, "sudo #{command}" ]
         ssh.config[:ssh_user] = config[:ssh_user] 
         ssh.config[:password] = config[:ssh_password]
+        ssh.password = config[:ssh_password]
         ssh.config[:manual] = true
 
         begin

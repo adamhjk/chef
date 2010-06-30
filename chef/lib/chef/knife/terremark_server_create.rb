@@ -57,16 +57,16 @@ class Chef
 
         server_name = @name_args[0]
 
-        terremark = Fog::Terremark.new(
-          :terremark_username => Chef::Config[:knife][:terremark_username],
-          :terremark_password => Chef::Config[:knife][:terremark_password],
+        terremark = Fog::Terremark::Vcloud.new(
+          :terremark_vcloud_username => Chef::Config[:knife][:terremark_username],
+          :terremark_vcloud_password => Chef::Config[:knife][:terremark_password],
           :terremark_service  => Chef::Config[:knife][:terremark_service] || :vcloud
         )
 
         $stdout.sync = true
 
         puts "Instantiating vApp #{h.color(server_name, :bold)}"
-        vapp_id = terremark.instantiate_vapp_template(server_name).body['href'].split('/').last
+        vapp_id = terremark.instantiate_vapp_template(server_name, 12).body['href'].split('/').last
 
         deploy_task_id = terremark.deploy_vapp(vapp_id).body['href'].split('/').last
         print "Waiting for deploy task [#{h.color(deploy_task_id, :bold)}]"
@@ -88,60 +88,30 @@ class Chef
         puts "\nBootstrapping #{h.color(server_name, :bold)}..."
         password = terremark.get_vapp_template(12).body['Description'].scan(/\npassword: (.*)\n/).first.first
 
-        command =  <<EOH
-bash -c '
-echo nameserver 208.67.222.222 > /etc/resolv.conf
-echo nameserver 208.67.220.220 >> /etc/resolv.conf
-
-if [ ! -f /usr/bin/chef-client ]; then
-  apt-get update
-  apt-get install -y ruby ruby1.8-dev build-essential wget libruby-extras libruby1.8-extras
-  cd /tmp
-  wget http://rubyforge.org/frs/download.php/69365/rubygems-1.3.6.tgz
-  tar xvf rubygems-1.3.6.tgz
-  cd rubygems-1.3.6
-  ruby setup.rb
-  cp /usr/bin/gem1.8 /usr/bin/gem
-  gem install chef ohai --no-rdoc --no-ri --verbose
-fi
-
-mkdir -p /etc/chef
-
-(
-cat <<'EOP'
-#{IO.read(Chef::Config[:validation_key])}
-EOP
-) > /etc/chef/validation.pem
-
-(
-cat <<'EOP'
-log_level        :info
-log_location     STDOUT
-chef_server_url  "#{Chef::Config[:chef_server_url]}" 
-validation_client_name "#{Chef::Config[:validation_client_name]}"
-EOP
-) > /etc/chef/client.rb
-
-(
-cat <<'EOP'
-#{{ "run_list" => @name_args[1..-1] }.to_json}
-EOP
-) > /etc/chef/first-boot.json
-
-/usr/bin/chef-client -j /etc/chef/first-boot.json'
-EOH
-
+        ssh = Fog::SSH.new(public_ip, 'vcloud', :password => password)
+        ssh.run([
+                'sudo sh -c "echo nameserver 208.67.222.222 > /etc/resolv.conf"',
+                'sudo sh -c "echo nameserver 208.67.220.220 > /etc/resolv.conf"',
+        ])
         begin
-          ssh = Chef::Knife::Ssh.new
-          ssh.name_args = [ public_ip, "sudo #{command}" ]
-          ssh.config[:ssh_user] = "vcloud"
-          ssh.config[:manual] = true
-          ssh.config[:password] = password
-          ssh.password = password
-          ssh.run
-        rescue Errno::ETIMEDOUT
-          puts "Timed out on bootstrap, re-trying. Hit CTRL-C to abort."
+          bootstrap = Chef::Knife::Bootstrap.new
+          bootstrap.name_args = [ public_ip, @name_args[1..-1] ].flatten
+          bootstrap.config[:ssh_user] = "vcloud" 
+          bootstrap.config[:ssh_password] = password
+          bootstrap.config[:password] = password
+          bootstrap.config[:chef_node_name] = @name_args[0] 
+          bootstrap.config[:manual] = true
+          bootstrap.config[:prerelease] = config[:prerelease]
+          bootstrap.run
+        rescue Errno::ECONNREFUSED
+          puts h.color("Connection refused on SSH, retrying - CTRL-C to abort")
           puts "You probably need to log in to Terremark and powercycle #{h.color(@name_args[0], :bold)}"
+          sleep 1
+          retry
+        rescue Errno::ETIMEDOUT
+          puts h.color("Connection timed out on SSH, retrying - CTRL-C to abort")
+          puts "You probably need to log in to Terremark and powercycle #{h.color(@name_args[0], :bold)}"
+          sleep 1
           retry
         end
 

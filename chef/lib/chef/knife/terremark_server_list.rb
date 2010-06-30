@@ -54,9 +54,9 @@ class Chef
 
         server_name = @name_args[0]
 
-        terremark = Fog::Terremark.new(
-          :terremark_username => Chef::Config[:knife][:terremark_username],
-          :terremark_password => Chef::Config[:knife][:terremark_password],
+        terremark = Fog::Terremark::Vcloud.new(
+          :terremark_vcloud_username => Chef::Config[:knife][:terremark_username],
+          :terremark_vcloud_password => Chef::Config[:knife][:terremark_password],
           :terremark_service  => Chef::Config[:knife][:terremark_service] || :vcloud
         )
 
