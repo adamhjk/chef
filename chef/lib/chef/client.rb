@@ -32,6 +32,7 @@ require 'chef/cookbook/cookbook_collection'
 require 'chef/cookbook/file_vendor'
 require 'chef/cookbook/file_system_file_vendor'
 require 'chef/cookbook/remote_file_vendor'
+require 'chef/version'
 require 'ohai'
 
 class Chef
@@ -79,7 +80,7 @@ class Chef
       begin
         run_status = Chef::RunStatus.new(node)
         run_status.start_clock
-        Chef::Log.info("Starting Chef Run")
+        Chef::Log.info("Starting Chef Run (Version #{Chef::VERSION})")
         
         if Chef::Config[:solo]
           Chef::Cookbook::FileVendor.on_create { |manifest| Chef::Cookbook::FileSystemFileVendor.new(manifest) }
