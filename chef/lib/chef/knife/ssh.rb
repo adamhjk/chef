@@ -244,6 +244,14 @@ class Chef
         end
       end
 
+      def csshx
+        csshx_cmd = "csshX"
+        session.servers_for.each do |server|
+          csshx_cmd << " #{server.user ? "#{server.user}@#{server.host}" : server.host}"
+        end
+        exec(csshx_cmd)
+      end
+
       def run 
         @longest = 0
 
@@ -260,6 +268,8 @@ class Chef
           tmux
         when "macterm"
           macterm
+        when "csshx"
+          csshx
         else
           ssh_command(@name_args[1..-1].join(" "))
         end
