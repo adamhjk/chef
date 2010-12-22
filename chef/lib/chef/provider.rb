@@ -50,9 +50,43 @@ class Chef
     def load_current_resource
       raise Chef::Exceptions::Override, "You must override load_current_resource in #{self.to_s}"
     end
+
+    def dry_run(message, &block)
+      if Chef::Config[:dry_run]
+        Chef::Log.warn(message)
+        true
+      else
+        block.call
+      end
+    end
+
+    def perform_dry_run(action_to_try)
+      load_current_resource unless @current_resource
+      if self.respond_to?("check_action_#{action_to_try}")
+        check_data = send("check_action_#{action_to_try}")
+        Chef::Log.info("#{@new_resource} will #{check_data}") if check_data
+      else
+        Chef::Log.warn("Provider #{self.class} action #{action_to_try} does not support dry run mode - displaying differences only")
+      end
+      Chef::Log.warn(@current_resource.diff(@new_resource))
+      true
+    end
+
+    def diff_resources(current_res, new_res)
+      current_res.diff(new_res)  
+    end
+
+    def action_diff
+      diff_output = diff_resources(@current_resource, @new_resource)
+      if diff_output
+        Chef::Log.info(diff_output)
+      end
+      Chef::Log.info("#{@new_resource} diff-ed")
+      true
+    end
     
     def action_nothing
-      Chef::Log.debug("Doing nothing for #{@new_resource.to_s}")
+      Chef::Log.debug("#{@new_resource} doing nothing")
       true
     end
     

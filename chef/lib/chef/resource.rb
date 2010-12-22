@@ -413,7 +413,11 @@ F
 
         provider = Chef::Platform.provider_for_resource(self)
         provider.load_current_resource
-        provider.send("action_#{action}")
+        if Chef::Config[:dry_run]
+          provider.perform_dry_run(action)
+        else
+          provider.send("action_#{action}")
+        end
       rescue => e
         if ignore_failure
           Chef::Log.error("#{self} (#{defined_at}) had an error: #{e.message}")
