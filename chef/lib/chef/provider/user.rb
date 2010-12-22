@@ -102,7 +102,7 @@ class Chef
           false
         end
       end
-     
+
       def action_create(check_data=nil)
         case check_data
         when :create_user
