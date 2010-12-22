@@ -333,6 +333,32 @@ describe Chef::Resource do
       @resource.run_action(:purr)
     end
 
+    describe "when dry run is false" do
+      before do
+        Chef::Config[:dry_run] = false
+      end
+
+      it "should call the appropriate action" do
+        @resource.provider.should_receive("action_purr")
+        @resource.run_action(:purr)
+      end
+    end
+
+    describe "when dry run is true" do
+      before do
+        Chef::Config[:dry_run] = true
+      end
+
+      after do
+        Chef::Config[:dry_run] = false
+      end
+
+      it "should call the providers dry_run method" do
+        @resource.provider.should_receive("dry_run")
+        @resource.run_action(:purr)
+      end
+    end
+
   end
 
 end

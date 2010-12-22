@@ -61,4 +61,12 @@ describe Chef::Provider do
     snitch = Proc.new {temporary_collection = @run_context.resource_collection}
     @provider.send(:recipe_eval, &snitch)
   end
+
+  describe "dry_run" do
+    it "should call load_current_resource if the current_resource does not exist yet" do
+      @provider.should_receive(:load_current_resource)
+      @provider.current_resource = nil
+      @provider.dry_run
+    end
+  end
 end

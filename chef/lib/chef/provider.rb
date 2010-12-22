@@ -26,12 +26,13 @@ class Chef
     
     include Chef::Mixin::RecipeDefinitionDSLCore
     
-    attr_accessor :new_resource, :current_resource, :run_context
+    attr_accessor :new_resource, :current_resource, :run_context, :dry_run_enabled
     
     def initialize(new_resource, run_context)
       @new_resource = new_resource
       @current_resource = nil
       @run_context = run_context
+      @dry_run_enabled = false
     end
 
     def node
@@ -49,6 +50,45 @@ class Chef
     
     def load_current_resource
       raise Chef::Exceptions::Override, "You must override load_current_resource in #{self.to_s}"
+    end
+
+    def dry_run(message, &block)
+      if Chef::Config[:dry_run]
+        Chef::Log.warn(message)
+        true
+      else
+        block.call
+      end
+    end
+
+    def action_dry_run
+      load_current_resource unless @current_resource
+      diff_result = @current_resource.diff(@new_resource)
+      if diff_result
+        if dry_run_enabled
+          @new_resource.action.to_a.each do |action_to_try|
+            send("action_#{action_to_try}")
+          end
+        else
+          Chef::Log.info("Provider #{self.class} does not support dry run mode - displaying differences only")
+        end
+        Chef::Log.warn(diff_result)
+        false
+      else
+        true
+      end
+    end
+
+    def diff_resources(current_res, new_res)
+      current_res.diff(new_res)  
+    end
+
+    def action_diff
+      diff_output = diff_resources(@current_resource, @new_resource)
+      if diff_output
+        Chef::Log.info(diff_output)
+      end
+      true
     end
     
     def action_nothing

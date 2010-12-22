@@ -303,6 +303,29 @@ F
       end
     end
 
+    def diff(other_resource)
+      has_differences = false
+
+      ivars = instance_variables.map { |ivar| ivar.to_sym } - HIDDEN_IVARS
+      text = "Resource declared at #{@source_line} differs from current state:\n"
+      text << convert_to_snake_case(self.class.name, 'Chef::Resource') + "(\"#{name}\") do\n"
+      ivars.each do |ivar|
+        my_value = instance_variable_get(ivar)
+        other_value = other_resource.instance_variable_get(ivar)
+        if (my_value != other_value) && !(other_value.respond_to?(:empty?) && other_value.empty?) && !(other_value.nil?)
+          has_differences = true
+          text << "-  #{ivar.to_s.sub(/^@/,'')}(#{my_value.inspect})\n"
+          text << "+  #{ivar.to_s.sub(/^@/,'')}(#{other_value.inspect})\n"
+        end
+      end 
+      if has_differences
+        text << "end\n"
+        text
+      else
+        false
+      end
+    end
+    
     def to_s
       "#{@resource_name}[#{@name}]"
     end
@@ -399,7 +422,11 @@ F
 
       provider = Chef::Platform.provider_for_resource(self)
       provider.load_current_resource
-      provider.send("action_#{action}")
+      if Chef::Config[:dry_run]
+        provider.action_dry_run
+      else
+        provider.send("action_#{action}")
+      end
     end
 
     def updated_by_last_action(true_or_false)

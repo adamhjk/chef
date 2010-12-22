@@ -33,6 +33,7 @@ class Chef
         super
         @user_exists = true
         @locked = nil
+        @dry_run_enabled = true
       end
   
       def convert_group_name
@@ -93,24 +94,30 @@ class Chef
           !@new_resource.send(user_attrib).nil? && @new_resource.send(user_attrib) != @current_resource.send(user_attrib)
         end
       end
-      
+     
       def action_create
         if !@user_exists
-          create_user
-          Chef::Log.info("Created #{@new_resource}")
-          @new_resource.updated_by_last_action(true)
+          dry_run("Would create #{@new_resource}") do
+            create_user
+            Chef::Log.info("Created #{@new_resource}")
+            @new_resource.updated_by_last_action(true)
+          end
         elsif compare_user
-          manage_user
-          Chef::Log.info("Altered #{@new_resource}")
-          @new_resource.updated_by_last_action(true)
+          dry_run("Would alter #{@new_resource}") do
+            manage_user
+            Chef::Log.info("Altered #{@new_resource}")
+            @new_resource.updated_by_last_action(true)
+          end
         end
       end
       
       def action_remove
         if @user_exists
-          remove_user
-          @new_resource.updated_by_last_action(true)
-          Chef::Log.info("Removed #{@new_resource}")
+          dry_run("Would remove #{@new_resource}") do
+            remove_user
+            @new_resource.updated_by_last_action(true)
+            Chef::Log.info("Removed #{@new_resource}")
+          end
         end
       end
 
@@ -120,9 +127,11 @@ class Chef
 
       def action_manage
         if @user_exists && compare_user
-          manage_user
-          @new_resource.updated_by_last_action(true)
-          Chef::Log.info("Managed #{@new_resource}")
+          dry_run("Would manage #{@new_resource}") do
+            manage_user
+            @new_resource.updated_by_last_action(true)
+            Chef::Log.info("Managed #{@new_resource}")
+          end
         end
       end
 
@@ -133,26 +142,34 @@ class Chef
       def action_modify
         if @user_exists
           if compare_user
-            manage_user
-            @new_resource.updated_by_last_action(true)
-            Chef::Log.info("Modified #{@new_resource}")
+            dry_run("Would modify #{@new_resource}") do
+              manage_user
+              @new_resource.updated_by_last_action(true)
+              Chef::Log.info("Modified #{@new_resource}")
+            end
           end
         else
-          raise Chef::Exceptions::User, "Cannot modify #{@new_resource} - user does not exist!"
+          dry_run("Cannot modify #{@new_resource}, would throw exception") do
+            raise Chef::Exceptions::User, "Cannot modify #{@new_resource} - user does not exist!"
+          end
         end
       end
 
       def action_lock
         if @user_exists
           if check_lock() == false
-            lock_user
-            @new_resource.updated_by_last_action(true)
-            Chef::Log.info("Locked #{@new_resource}")
+            dry_run("Would lock #{@new_resource}") do
+              lock_user
+              @new_resource.updated_by_last_action(true)
+              Chef::Log.info("Locked #{@new_resource}")
+            end
           else
             Chef::Log.debug("No need to lock #{@new_resource}")
           end
         else
-          raise Chef::Exceptions::User, "Cannot lock #{@new_resource} - user does not exist!"
+          dry_run("Cannot lock #{@new_resource}, would throw exception") do
+            raise Chef::Exceptions::User, "Cannot lock #{@new_resource} - user does not exist!"
+          end
         end
       end
 
@@ -167,14 +184,18 @@ class Chef
       def action_unlock
         if @user_exists
           if check_lock() == true
-            unlock_user
-            @new_resource.updated_by_last_action(true)
-            Chef::Log.info("Unlocked #{@new_resource}")
+            dry_run("Would unlock #{@new_resource}") do
+              unlock_user
+              @new_resource.updated_by_last_action(true)
+              Chef::Log.info("Unlocked #{@new_resource}")
+            end
           else
             Chef::Log.debug("No need to unlock #{@new_resource}")
           end
         else
-          raise Chef::Exceptions::User, "Cannot unlock #{@new_resource} - user does not exist!"
+          dry_run("Cannot unlock #{@new_resource} - user does not exist, would throw exception") do
+            raise Chef::Exceptions::User, "Cannot unlock #{@new_resource} - user does not exist!"
+          end
         end
       end
       
