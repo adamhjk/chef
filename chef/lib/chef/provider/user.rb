@@ -94,20 +94,27 @@ class Chef
           !@new_resource.send(user_attrib).nil? && @new_resource.send(user_attrib) != @current_resource.send(user_attrib)
         end
       end
-     
-      def action_create
+
+      def check_action_create
         if !@user_exists
-          dry_run("Would create #{@new_resource}") do
-            create_user
-            Chef::Log.info("Created #{@new_resource}")
-            @new_resource.updated_by_last_action(true)
-          end
+          :create_user
         elsif compare_user
-          dry_run("Would alter #{@new_resource}") do
-            manage_user
-            Chef::Log.info("Altered #{@new_resource}")
-            @new_resource.updated_by_last_action(true)
-          end
+          :manage_user
+        else
+          false
+        end
+      end
+     
+      def action_create(check_data=nil)
+        case check_data
+        when :create_user
+          create_user
+          Chef::Log.info("Created #{@new_resource}")
+          @new_resource.updated_by_last_action(true)
+        when :manage_user
+          manage_user
+          Chef::Log.info("Altered #{@new_resource}")
+          @new_resource.updated_by_last_action(true)
         end
       end
       

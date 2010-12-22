@@ -423,7 +423,7 @@ F
       provider = Chef::Platform.provider_for_resource(self)
       provider.load_current_resource
       if Chef::Config[:dry_run]
-        provider.action_dry_run
+        provider.perform_dry_run(action)
       else
         provider.send("action_#{action}")
       end
