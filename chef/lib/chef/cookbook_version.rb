@@ -541,7 +541,18 @@ class Chef
       if found_pref
         @manifest_records_by_path[found_pref]
       else
-        raise Chef::Exceptions::FileNotFound, "cookbook #{name} does not contain file #{segment}/#{filename}"
+        if segment == :files || segment == :templates
+          error_message = "cookbook #{name} does not contain a file at any of these locations:\n"
+          error_locations = [
+            "  #{segment}/#{node[:platform]}-#{node[:platform_version]}/#{filename}",
+            "  #{segment}/#{node[:platform]}/#{filename}",
+            "  #{segment}/default/#{filename}",
+          ]
+          error_message << error_locations.join("\n")
+          raise Chef::Exceptions::FileNotFound, error_message
+        else
+          raise Chef::Exceptions::FileNotFound, "cookbook #{name} does not contain file #{segment}/#{filename}"
+        end
       end
     end
 
