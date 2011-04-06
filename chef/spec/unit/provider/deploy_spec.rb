@@ -234,8 +234,8 @@ describe Chef::Provider::Deploy do
     @provider.should_receive(:enforce_ownership)
     @provider.should_receive(:run_command).with(:command => "migration_foo", :cwd => @expected_release_dir,
                                                 :user => "deployNinja", :group => "deployNinjas",
-																								:command_log_level => :info, :live_stream => STDOUT,
-																								:command_log_prepend => "deploy[/my/deploy/dir]",
+                                                :command_log_level => :info, :live_stream => STDOUT,
+                                                :command_log_prepend => "deploy[/my/deploy/dir]",
                                                 :environment => {"RAILS_ENV"=>"production"})
     @provider.migrate
   end

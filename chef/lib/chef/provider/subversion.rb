@@ -83,14 +83,14 @@ class Chef
       def sync_command
         c = scm :update, @new_resource.svn_arguments, verbose, authentication, "-r#{revision_int}", @new_resource.destination
         Chef::Log.debug "#{@new_resource} updated working copy #{@new_resource.destination} to revision #{@new_resource.revision}"
-				c
+        c
       end
 
       def checkout_command
         c = scm :checkout, @new_resource.svn_arguments, verbose, authentication,
             "-r#{revision_int}", @new_resource.repository, @new_resource.destination
         Chef::Log.info "#{@new_resource} checked out #{@new_resource.repository} at revision #{@new_resource.revision} to #{@new_resource.destination}"
-				c
+        c
       end
 
       def export_command
@@ -99,7 +99,7 @@ class Chef
             "-r#{revision_int}" << @new_resource.repository << @new_resource.destination
         c = scm :export, *args
         Chef::Log.info "#{@new_resource} exported #{@new_resource.repository} at revision #{@new_resource.revision} to #{@new_resource.destination}"
-				c
+        c
       end
 
       # If the specified revision isn't an integer ("HEAD" for example), look

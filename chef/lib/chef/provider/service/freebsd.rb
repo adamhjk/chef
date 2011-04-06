@@ -42,7 +42,7 @@ class Chef
             begin
               if run_command(:command => "#{@init_command} status") == 0
                 @current_resource.running true
-								Chef::Log.debug("#{@new_resource} is running")
+                Chef::Log.debug("#{@new_resource} is running")
               end
             rescue Chef::Exceptions::Exec
               @current_resource.running false
@@ -53,7 +53,7 @@ class Chef
             begin
               if run_command(:command => @new_resource.status_command) == 0
                 @current_resource.running true
-								Chef::Log.debug("#{@new_resource} is running")
+                Chef::Log.debug("#{@new_resource} is running")
               end
             rescue Chef::Exceptions::Exec
               @current_resource.running false

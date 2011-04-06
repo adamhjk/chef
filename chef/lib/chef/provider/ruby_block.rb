@@ -26,7 +26,7 @@ class Chef
 
       def action_create
         @new_resource.block.call
-				Chef::Log.info("#{@new_resource} called")
+        Chef::Log.info("#{@new_resource} called")
         @new_resource.updated_by_last_action(true)
       end
     end

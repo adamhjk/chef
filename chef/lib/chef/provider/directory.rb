@@ -46,7 +46,7 @@ class Chef
             ::Dir.mkdir(@new_resource.path)
           end
           @new_resource.updated_by_last_action(true)
-					Chef::Log.info("#{@new_resource} created directory #{@new_resource.path}")
+          Chef::Log.info("#{@new_resource} created directory #{@new_resource.path}")
         end
         set_owner if @new_resource.owner != nil
         set_group if @new_resource.group != nil

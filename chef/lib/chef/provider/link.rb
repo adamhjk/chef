@@ -86,7 +86,7 @@ class Chef
         unless compare_owner
           @set_user_id = negative_complement(@set_user_id)
           ::File.lchown(@set_user_id, nil, @new_resource.target_file)
-					Chef::Log.info("#{@new_resource} owner changed to #{@set_user_id}")
+          Chef::Log.info("#{@new_resource} owner changed to #{@set_user_id}")
           @new_resource.updated_by_last_action(true)
         end
       end
@@ -109,7 +109,7 @@ class Chef
         unless compare_group
           @set_group_id = negative_complement(@set_group_id)
           ::File.lchown(nil, @set_group_id, @new_resource.target_file)
-					Chef::Log.info("#{@new_resource} group changed to #{@set_group_id}")
+          Chef::Log.info("#{@new_resource} group changed to #{@set_group_id}")
           @new_resource.updated_by_last_action(true)
         end
       end
@@ -117,18 +117,18 @@ class Chef
       def action_create
         if @current_resource.to != ::File.expand_path(@new_resource.to, @new_resource.target_file)
           if @new_resource.link_type == :symbolic
-						unless (::File.symlink?(@new_resource.target_file) && ::File.readlink(@new_resource.target_file) == @new_resource.to)
-							if ::File.symlink?(@new_resource.target_file) || ::File.exist?(@new_resource.target_file)
-								::File.unlink(@new_resource.target_file)
-							end
-							::File.symlink(@new_resource.to,@new_resource.target_file)
-							Chef::Log.debug("#{@new_resource} created #{@new_resource.link_type} link from #{@new_resource.to} -> #{@new_resource.target_file}")
-							Chef::Log.info("#{@new_resource} created")
-						end
+            unless (::File.symlink?(@new_resource.target_file) && ::File.readlink(@new_resource.target_file) == @new_resource.to)
+              if ::File.symlink?(@new_resource.target_file) || ::File.exist?(@new_resource.target_file)
+                ::File.unlink(@new_resource.target_file)
+              end
+              ::File.symlink(@new_resource.to,@new_resource.target_file)
+              Chef::Log.debug("#{@new_resource} created #{@new_resource.link_type} link from #{@new_resource.to} -> #{@new_resource.target_file}")
+              Chef::Log.info("#{@new_resource} created")
+            end
           elsif @new_resource.link_type == :hard
             ::File.link(@new_resource.to, @new_resource.target_file)
-						Chef::Log.debug("#{@new_resource} created #{@new_resource.link_type} link from #{@new_resource.to} -> #{@new_resource.target_file}")
-						Chef::Log.info("#{@new_resource} created")
+            Chef::Log.debug("#{@new_resource} created #{@new_resource.link_type} link from #{@new_resource.to} -> #{@new_resource.target_file}")
+            Chef::Log.info("#{@new_resource} created")
           end
           @new_resource.updated_by_last_action(true)
         end
