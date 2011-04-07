@@ -62,13 +62,24 @@ class Chef
 
     def perform_dry_run(action_to_try)
       load_current_resource unless @current_resource
+
       if self.respond_to?("check_action_#{action_to_try}")
         check_data = send("check_action_#{action_to_try}")
-        Chef::Log.info("#{@new_resource} will #{check_data}") if check_data
+        if check_data
+          Chef::Log.info("#{@new_resource} will #{check_data}") 
+        else
+          Chef::Log.debug("#{@new_resource} will not take action") 
+        end
       else
-        Chef::Log.warn("Provider #{self.class} action #{action_to_try} does not support dry run mode - displaying differences only")
+        Chef::Log.warn("#{@new_resource} provider #{self.class} action #{action_to_try} does not support dry run mode")
+        if @current_resource
+          Chef::Log.warn("#{@new_resource} falling back to diff only mode")
+          @current_resource.source_line = @new_resource.source_line
+          @current_resource.diff(@new_resource)
+        else
+          Chef::Log.warn("#{@new_resource} cannot be evaluated for dry run - #{self.class} does not populate a current resource") 
+        end
       end
-      Chef::Log.warn(@current_resource.diff(@new_resource))
       true
     end
 
@@ -79,7 +90,7 @@ class Chef
     def action_diff
       diff_output = diff_resources(@current_resource, @new_resource)
       if diff_output
-        Chef::Log.info(diff_output)
+    #    Chef::Log.info(diff_output)
       end
       Chef::Log.info("#{@new_resource} diff-ed")
       true

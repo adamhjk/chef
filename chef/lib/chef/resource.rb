@@ -303,6 +303,32 @@ F
       end
     end
 
+    def diff(other_resource)
+      has_differences = false
+
+      ivars = instance_variables.map { |ivar| ivar.to_sym } - [ HIDDEN_IVARS, :@action ].flatten!
+      text = "#{self.to_s} differs from current state:\n"
+      text << convert_to_snake_case(self.class.name, 'Chef::Resource') + "(\"#{name}\") do\n"
+      ivars.each do |ivar|
+        my_value = instance_variable_get(ivar)
+        other_value = other_resource.instance_variable_get(ivar)
+        if (my_value != other_value) && !(other_value.respond_to?(:empty?) && other_value.empty?) && !(other_value.nil?)
+          has_differences = true
+          text << "-  #{ivar.to_s.sub(/^@/,'')}(#{my_value.inspect})\n"
+          text << "+  #{ivar.to_s.sub(/^@/,'')}(#{other_value.inspect})\n"
+        end
+      end 
+      if has_differences
+        text << "end"
+        text
+        Chef::Log.info(text)
+        true
+      else
+        Chef::Log.debug("#{self.to_s} does not differ from current state")
+        false
+      end
+    end
+
     def to_s
       "#{@resource_name}[#{@name}]"
     end
