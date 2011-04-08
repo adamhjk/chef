@@ -77,7 +77,7 @@ class Chef
         target_parent_directory = ::File.dirname(@new_resource.destination)
         unless ::File.directory?(target_parent_directory)
           msg = "Cannot clone #{@new_resource} to #{@new_resource.destination}, the enclosing directory #{target_parent_directory} does not exist"
-          raise Chef::Exceptions::MissingParentDirectory, msg
+          raise Chef::Exceptions::MissingParentDirectory, msg unless Chef::Config[:dry_run]
         end
       end
 

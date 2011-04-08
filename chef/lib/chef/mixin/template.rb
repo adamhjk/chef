@@ -45,6 +45,10 @@ class Chef
         Tempfile.open("chef-rendered-template") do |tempfile|
           tempfile.print(output)
           tempfile.close
+          # We have to manually restart dry run here, because this block
+          # gets evaluated inside the tempfile, which we dynamically
+          # disable
+          Chef::DryRun.start(@new_resource, :create) if Chef::Config[:dry_run]
           yield tempfile
         end
       end

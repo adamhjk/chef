@@ -111,7 +111,7 @@ class Chef
             @new_resource.revision
           else
             command = scm(:info, @new_resource.repository, @new_resource.svn_info_args, authentication, "-r#{@new_resource.revision}")
-            status, svn_info, error_message = output_of_command(command, run_options)
+            status, svn_info, error_message = Chef::DryRun.disable(@new_resource, "revision_int") { output_of_command(command, run_options) }
             handle_command_failures(status, "STDOUT: #{svn_info}\nSTDERR: #{error_message}")
             extract_revision_info(svn_info)
           end
@@ -185,7 +185,7 @@ class Chef
         target_parent_directory = ::File.dirname(@new_resource.destination)
         unless ::File.directory?(target_parent_directory)
           msg = "Cannot clone #{@new_resource} to #{@new_resource.destination}, the enclosing directory #{target_parent_directory} does not exist"
-          raise Chef::Exceptions::MissingParentDirectory, msg
+          raise Chef::Exceptions::MissingParentDirectory, msg unless Chef::Config[:dry_run]
         end
       end
 
