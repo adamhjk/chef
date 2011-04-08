@@ -24,6 +24,7 @@ require 'chef/mixin/convert_to_class_name'
 require 'chef/mixin/command'
 require 'chef/resource_collection'
 require 'chef/node'
+require 'chef/dry_run'
 
 require 'chef/mixin/deprecation'
 
@@ -439,12 +440,11 @@ F
 
         provider = Chef::Platform.provider_for_resource(self)
         provider.load_current_resource
-        if Chef::Config[:dry_run]
-          provider.perform_dry_run(action)
-        else
-          provider.send("action_#{action}")
-        end
+        Chef::DryRun.start(self, action) if Chef::Config[:dry_run]
+        provider.send("action_#{action}")
+        Chef::DryRun.finish(self, action) if Chef::Config[:dry_run]
       rescue => e
+        Chef::DryRun.finish(self, action) if Chef::Config[:dry_run]
         if ignore_failure
           Chef::Log.error("#{self} (#{defined_at}) had an error: #{e.message}")
         else
