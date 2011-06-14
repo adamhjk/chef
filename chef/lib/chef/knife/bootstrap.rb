@@ -17,18 +17,20 @@
 #
 
 require 'chef/knife'
+require 'erubis'
 
 class Chef
   class Knife
     class Bootstrap < Knife
 
       deps do
+        require 'chef/knife/core/bootstrap_context'
         require 'chef/json_compat'
         require 'tempfile'
-        require 'erubis'
         require 'highline'
         require 'net/ssh'
         require 'net/ssh/multi'
+        Chef::Knife::Ssh.load_deps
       end
 
       banner "knife bootstrap FQDN (options)"
@@ -64,6 +66,16 @@ class Chef
       option :prerelease,
         :long => "--prerelease",
         :description => "Install the pre-release chef gems"
+
+      option :bootstrap_version,
+        :long => "--bootstrap-version VERSION",
+        :description => "The version of Chef to install",
+        :proc => lambda { |v| Chef::Config[:knife][:bootstrap_version] = v }
+
+      option :bootstrap_proxy,
+        :long => "--bootstrap-proxy PROXY_URL",
+        :description => "The proxy server for the node being bootstrapped",
+        :proc => Proc.new { |p| Chef::Config[:knife][:bootstrap_proxy] = p }
 
       option :distro,
         :short => "-d DISTRO",
@@ -103,6 +115,7 @@ class Chef
           bootstrap_files << File.join(File.dirname(__FILE__), 'bootstrap', "#{config[:distro]}.erb")
           bootstrap_files << File.join(Dir.pwd, ".chef", "bootstrap", "#{config[:distro]}.erb")
           bootstrap_files << File.join(ENV['HOME'], '.chef', 'bootstrap', "#{config[:distro]}.erb")
+          bootstrap_files << Gem.find_files(File.join("chef","knife","bootstrap","#{config[:distro]}.erb"))
         end
 
         template = Array(bootstrap_files).find do |bootstrap_template|
@@ -121,9 +134,7 @@ class Chef
       end
 
       def render_template(template=nil)
-        context = {}
-        context[:run_list] = config[:run_list]
-        context[:config] = config
+        context = Knife::Core::BootstrapContext.new(config, config[:run_list], Chef::Config)
         Erubis::Eruby.new(template).evaluate(context)
       end
 
@@ -161,6 +172,7 @@ class Chef
 
       def knife_ssh
         ssh = Chef::Knife::Ssh.new
+        ssh.ui = ui
         ssh.name_args = [ server_name, ssh_command ]
         ssh.config[:ssh_user] = config[:ssh_user]
         ssh.config[:ssh_password] = config[:ssh_password]
@@ -191,4 +203,3 @@ class Chef
     end
   end
 end
-

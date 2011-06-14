@@ -151,3 +151,4 @@ describe Chef::Knife::Bootstrap do
   end
 
 end
+

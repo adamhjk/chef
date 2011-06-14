@@ -60,17 +60,24 @@ class Chef
         :long  => '--environment ENVIRONMENT',
         :description => "Set ENVIRONMENT's version dependency match the version you're uploading.",
         :default => nil
+      
+      option :depends,
+        :short => "-d",
+        :long => "--include-dependencies",
+        :description => "Also upload cookbook dependencies"
 
       def run
         config[:cookbook_path] ||= Chef::Config[:cookbook_path]
 
         assert_environment_valid!
+        warn_about_cookbook_shadowing
         version_constraints_to_update = {}
 
         if config[:all]
+          justify_width = cookbook_repo.cookbook_names.map {|name| name.size}.max.to_i + 2
           cookbook_repo.each do |cookbook_name, cookbook|
             cookbook.freeze_version if config[:freeze]
-            upload(cookbook)
+            upload(cookbook, justify_width)
             version_constraints_to_update[cookbook_name] = cookbook.version
           end
         else
@@ -79,11 +86,17 @@ class Chef
             ui.error("You must specify the --all flag or at least one cookbook name")
             exit 1
           end
+          justify_width = @name_args.map {|name| name.size }.max.to_i + 2
           @name_args.each do |cookbook_name|
             begin
               cookbook = cookbook_repo[cookbook_name]
+              if config[:depends]
+                cookbook.metadata.dependencies.each do |dep, versions|
+                  @name_args.push dep
+                end
+              end
               cookbook.freeze_version if config[:freeze]
-              upload(cookbook)
+              upload(cookbook, justify_width)
               version_constraints_to_update[cookbook_name] = cookbook.version
             rescue Exceptions::CookbookNotFoundInRepo => e
               ui.error("Could not find cookbook #{cookbook_name} in your cookbook path, skipping it")
@@ -115,6 +128,22 @@ class Chef
         @environment ||= config[:environment] ? Environment.load(config[:environment]) : nil
       end
 
+      def warn_about_cookbook_shadowing
+        unless cookbook_repo.merged_cookbooks.empty?
+          ui.warn "* " * 40
+          ui.warn(<<-WARNING)
+The cookbooks: #{cookbook_repo.merged_cookbooks.join(', ')} exist in multiple places in your cookbook_path.
+A composite version of these cookbooks has been compiled for uploading.
+
+#{ui.color('IMPORTANT:', :red, :bold)} In a future version of Chef, this behavior will be removed and you will no longer
+be able to have the same version of a cookbook in multiple places in your cookbook_path.
+WARNING
+          ui.warn "The affected cookbooks are located:"
+          ui.output ui.format_for_display(cookbook_repo.merged_cookbook_paths)
+          ui.warn "* " * 40
+        end
+      end
+
       private
 
       def assert_environment_valid!
@@ -129,12 +158,9 @@ class Chef
         end
       end
 
-      def upload(cookbook)
-        if config[:all]
-          ui.info("** #{cookbook.name} **")
-        else
-          ui.info "Uploading #{cookbook.name}..."
-        end
+      def upload(cookbook, justify_width)
+        ui.info("Uploading #{cookbook.name.to_s.ljust(justify_width + 10)} [#{cookbook.version}]")
+
         check_for_broken_links(cookbook)
         Chef::CookbookUploader.new(cookbook, config[:cookbook_path], :force => config[:force]).upload_cookbook
       rescue Net::HTTPServerException => e
